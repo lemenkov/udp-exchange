@@ -1,1 +1,2 @@
-include ../umbrella.mk
+all:
+	rebar compile -v
