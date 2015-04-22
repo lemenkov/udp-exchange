@@ -135,7 +135,7 @@ parse(_IpAddr, _Port, Packet, _Config) ->
 				{node, node()},
 				{msg, Hep#hep.payload}
 			],
-			{ok, {CallId, [], Json}};
+			{ok, {CallId, [], iolist_to_binary(mochijson2:encode(Json))}};
 		{error, _HepError, _Rest} ->
 			{error, {hep_parsing_error, udp_exchange:truncate_bin(255, Packet)}}
 	end.
