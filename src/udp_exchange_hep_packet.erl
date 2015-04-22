@@ -90,7 +90,7 @@ parse(_IpAddr, _Port, Packet, _Config) ->
 
 			MkDate = fun() ->
 				{{YYYY,MM,DD},{Hour,Min,Sec}} = erlang:localtime(),
-				lists:flatten(io_lib:format("~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w", [YYYY, MM, DD, Hour,Min,Sec]))
+				iolist_to_binary(io_lib:format("~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w", [YYYY, MM, DD, Hour,Min,Sec]))
 			end,
 
 			CallId = proplists:get_value(<<"call-id">>, Headers, <<"">>),
@@ -119,9 +119,9 @@ parse(_IpAddr, _Port, Packet, _Config) ->
 				{authorization, Auth},
 				{auth_user, AuthUser},
 				{user_agent, proplists:get_value(<<"user-agent">>, Headers, <<"">>)}, % FIXME server-agent as well
-				{source_ip, inet_parse:ntoa(Hep#hep.src_ip)},
+				{source_ip, << <<S>> || S <- inet_parse:ntoa(Hep#hep.src_ip) >>},
 				{source_port, Hep#hep.src_port},
-				{destination_ip, inet_parse:ntoa(Hep#hep.dst_ip)},
+				{destination_ip, << <<S>> || S <- inet_parse:ntoa(Hep#hep.dst_ip) >>},
 				{destination_port, Hep#hep.dst_port},
 				{contact_ip, ContactIp},
 				{contact_port, ContactPort},
