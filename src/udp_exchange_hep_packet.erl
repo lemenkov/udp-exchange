@@ -14,10 +14,17 @@
 
 -export([configure/1, parse/4, format/6]).
 
-configure(#exchange{}) ->
-    no_config.
+-record(hep_params, {ets, prefix}).
 
-parse(_IpAddr, _Port, Packet, _Config) ->
+configure(#exchange{}) ->
+	Ets = ets:new(hep_counter, [public, named_table]),
+	ets:insert_new(hep_counter, {id, 0}),
+	{A,B,C} = os:timestamp(),
+	random:seed(A,B,C),
+	Prefix = [ random:uniform(26) + 96 || X <- lists:seq(0,15) ],
+	#hep_params{ets = Ets, prefix = Prefix}.
+
+parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 	case hep_multi_decoder:decode(Packet) of
 		{ok, Hep} ->
 			{ok, Class, Headers, _Rest} = nksip_parse_sipmsg:parse(Hep#hep.payload),
@@ -95,8 +102,10 @@ parse(_IpAddr, _Port, Packet, _Config) ->
 
 			CallId = proplists:get_value(<<"call-id">>, Headers, <<"">>),
 
+			Counter = ets:update_counter(hep_counter, id, 1),
+
 			Json = [
-				{id, fun({Mega, Secs, Micro}) -> Mega*1000*1000*1000*1000 + Secs * 1000 * 1000 + Micro end (os:timestamp())}, % FIXME monotone counter
+				{id, iolist_to_binary(io_lib:format("~s-~16..0lb", [Prefix, Counter]))},
 				{date, MkDate()},
 				{micro_ts, fun({Mega, Secs, Micro}) -> Mega*1000*1000*1000*1000 + Secs * 1000 * 1000 + Micro end (Hep#hep.timestamp)},
 				{method, Method},
