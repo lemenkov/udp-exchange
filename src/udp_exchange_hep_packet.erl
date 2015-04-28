@@ -32,7 +32,7 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 			% SIP_REQUEST 1, SIP_REPLY 2, SIP_INVALID 0
 			{SipType, _Code, Reason, Method, Uri} = case Class of
 				{req, M0, U0} -> {1, <<"">>, <<"">>, M0, U0};
-				{resp, C0, R0} -> {2, C0, R0, C0, <<"">>}
+				{resp, C0, R0} -> {2, list_to_binary(C0), R0, list_to_binary(C0), <<"">>}
 			end,
 
 			RuriUser = case Uri of
