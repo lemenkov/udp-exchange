@@ -21,7 +21,7 @@ configure(#exchange{}) ->
 	ets:insert_new(hep_counter, {id, 0}),
 	{A,B,C} = os:timestamp(),
 	random:seed(A,B,C),
-	Prefix = [ random:uniform(26) + 96 || X <- lists:seq(0,15) ],
+	Prefix = [ random:uniform(26) + 96 || _ <- lists:seq(0,15) ],
 	#hep_params{ets = Ets, prefix = Prefix}.
 
 parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
