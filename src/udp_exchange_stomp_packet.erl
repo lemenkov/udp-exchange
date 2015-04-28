@@ -24,7 +24,7 @@ configure(#exchange{name = XName, arguments = Args}) ->
         end,
     #stomp_params{routing_key_header = RoutingKeyHeader}.
 
-parse(_IpAddr, _Port, Packet, #stomp_params{routing_key_header = RoutingKeyHeader}) ->
+parse(_IpAddr, _Port, Packet, Params = #stomp_params{routing_key_header = RoutingKeyHeader}) ->
     %% Add trailing NUL byte to let the implicit boundary of the
     %% packet terminate the STOMP frame.
     case udp_exchange_stomp_frame:parse(<<Packet/binary, 0>>,
@@ -46,7 +46,7 @@ parse(_IpAddr, _Port, Packet, #stomp_params{routing_key_header = RoutingKeyHeade
             {ok, {RoutingKeySuffix,
                   [{headers, [{list_to_binary(K), longstr, list_to_binary(V)}
                               || {K, V} <- Headers]}],
-                  iolist_to_binary(Body)}};
+                  iolist_to_binary(Body)}, Params};
         _ ->
             {error, {stomp_syntax_error, udp_exchange:truncate_bin(255, Packet)}}
     end.

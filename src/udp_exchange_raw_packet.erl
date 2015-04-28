@@ -10,11 +10,11 @@
 configure(#exchange{}) ->
     no_config.
 
-parse(_IpAddr, _Port, Packet, _Config) ->
+parse(_IpAddr, _Port, Packet, Config) ->
     %% FIXME: use more clever end-of-routing key detection
     {ok, {udp_exchange:truncate_bin(255, Packet),
           [],
-          Packet}}.
+          Packet}, Config}.
 
 format(IpAddr, Port, _RoutingKeySuffixes, Body, #delivery{}, _Config) ->
     {IpAddr, Port, Body}.

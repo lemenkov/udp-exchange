@@ -14,17 +14,15 @@
 
 -export([configure/1, parse/4, format/6]).
 
--record(hep_params, {ets, prefix}).
+-record(hep_config, {counter = 0, prefix}).
 
 configure(#exchange{}) ->
-	Ets = ets:new(hep_counter, [public, named_table]),
-	ets:insert_new(hep_counter, {id, 0}),
 	{A,B,C} = os:timestamp(),
 	random:seed(A,B,C),
 	Prefix = << << (random:uniform(26) + 96):8 >> || _ <- lists:seq(0,15) >>,
-	#hep_params{ets = Ets, prefix = Prefix}.
+	#hep_config{prefix = Prefix}.
 
-parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
+parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = Prefix}) ->
 	case hep_multi_decoder:decode(Packet) of
 		{ok, Hep} ->
 			{ok, Class, Headers, _Rest} = nksip_parse_sipmsg:parse(Hep#hep.payload),
@@ -102,8 +100,6 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 
 			CallId = proplists:get_value(<<"call-id">>, Headers, <<"">>),
 
-			Counter = ets:update_counter(hep_counter, id, 1),
-
 			Json = [
 				{id, iolist_to_binary([Prefix, io_lib:format("-~16..0lb", [Counter])])},
 				{date, MkDate()},
@@ -152,7 +148,8 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 						{content_encoding, <<"utf8">>}
 					],
 					iolist_to_binary(mochijson2:encode(Json))
-				}
+				},
+				Config#hep_config{counter = Counter + 1}
 			};
 		{error, _HepError, _Rest} ->
 			{error, {hep_parsing_error, udp_exchange:truncate_bin(255, Packet)}}
