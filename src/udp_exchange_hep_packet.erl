@@ -21,7 +21,7 @@ configure(#exchange{}) ->
 	ets:insert_new(hep_counter, {id, 0}),
 	{A,B,C} = os:timestamp(),
 	random:seed(A,B,C),
-	Prefix = [ random:uniform(26) + 96 || _ <- lists:seq(0,15) ],
+	Prefix = << << (random:uniform(26) + 96):8 >> || _ <- lists:seq(0,15) >>,
 	#hep_params{ets = Ets, prefix = Prefix}.
 
 parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
@@ -105,7 +105,7 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 			Counter = ets:update_counter(hep_counter, id, 1),
 
 			Json = [
-				{id, iolist_to_binary(io_lib:format("~s-~16..0lb", [Prefix, Counter]))},
+				{id, iolist_to_binary([Prefix, io_lib:format("-~16..0lb", [Counter])])},
 				{date, MkDate()},
 				{micro_ts, fun({Mega, Secs, Micro}) -> Mega*1000*1000*1000*1000 + Secs * 1000 * 1000 + Micro end (Hep#hep.timestamp)},
 				{method, Method},
