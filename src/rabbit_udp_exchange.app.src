@@ -1,6 +1,6 @@
 {application, rabbit_udp_exchange,
  [{description, "RabbitMQ UDP Exchange Plugin"},
-  {vsn, "%%VSN%%"},
+  {vsn, "3.3.5"},
   {modules, [udp_exchange_app, udp_exchange, udp_exchange_sup]},
   {registered, []},
   {mod, {udp_exchange_app, []}},
