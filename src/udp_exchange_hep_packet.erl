@@ -94,7 +94,7 @@ parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = P
 			end,
 
 			MkDate = fun() ->
-				{{YYYY,MM,DD},{Hour,Min,Sec}} = erlang:localtime(),
+				{{YYYY,MM,DD},{Hour,Min,Sec}} = calendar:now_to_local_time(Hep#hep.timestamp),
 				iolist_to_binary(io_lib:format("~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w", [YYYY, MM, DD, Hour,Min,Sec]))
 			end,
 
