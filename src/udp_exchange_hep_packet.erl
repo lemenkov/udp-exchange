@@ -44,8 +44,12 @@ parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = P
 				case proplists:get_value(N, Headers) of
 					undefined -> {<<"">>, <<"">>};
 					V ->
-						{N, {U, T}} = nksip_parse_header:parse(N, V),
-						{U#uri.user, T}
+						case catch nksip_parse_header:parse(N, V) of
+							{N, {U, T}} ->
+								{U#uri.user, T};
+							{invalid, N} ->
+								{iolist_to_binary([<<"invalid_">>, N]), iolist_to_binary([<<"invalid_">>, N])}
+						end
 				end
 			end,
 
