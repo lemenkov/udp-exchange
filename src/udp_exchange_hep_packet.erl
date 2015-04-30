@@ -36,8 +36,10 @@ parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = P
 			RuriUser = case Uri of
 				<<"">> -> <<"">>;
 				_ ->
-					{_, {R, _}} = nksip_parse_header:parse(<<"from">>, Uri),
-					R#uri.user
+					case catch nksip_parse_header:parse(<<"from">>, Uri) of
+						{_, {R, _}} -> R#uri.user;
+						{invalid, <<"from">>} -> <<"invalid_ruri">>
+					end
 			end,
 
 			F = fun(N) ->
@@ -59,21 +61,31 @@ parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = P
 			Vias = proplists:get_value(<<"via">>, Headers, <<"">>),
 			Via = case Vias of
 				<<"">> -> <<"">>;
-				_ -> {_, [V | _ ]} = nksip_parse_header:parse(<<"via">>, Vias), V
+				_ ->
+					case catch nksip_parse_header:parse(<<"via">>, Vias) of
+						{_, [V | _ ]} -> V;
+						_ -> <<"invalid_via">>
+					end
 			end,
 
 			Contact = proplists:get_value(<<"contact">>, Headers, <<"">>),
 			{ContactIp, ContactPort, ContactUser} = case Contact of
 				<<"">> -> {<<"">>, <<"0">>, <<"">>};
 				_ ->
-					{<<"contact">>, [C | _] } = nksip_parse_header:parse(<<"contact">>, Contact),
-					{C#uri.domain, C#uri.port, C#uri.user}
+					case catch nksip_parse_header:parse(<<"contact">>, Contact) of
+						{<<"contact">>, [C | _] } -> {C#uri.domain, C#uri.port, C#uri.user};
+						_ -> {<<"invalid_contact">>, <<"0">>, <<"invalid_contact">>}
+					end
 			end,
 
 			PAssetedId = proplists:get_value(<<"p-asserted-identity">>, Headers, <<"">>),
 			PIdUser = case PAssetedId of
 				<<"">> -> <<"">>;
-				_ -> {<<"contact">>, [P | _] } = nksip_parse_header:parse(<<"contact">>, Contact), P#uri.user
+				_ ->
+					case catch nksip_parse_header:parse(<<"contact">>, Contact) of
+						{<<"contact">>, [P | _] } -> P#uri.user;
+						_ -> <<"invalid_p_asserted_identity">>
+					end
 			end,
 
 			% P-RTP-Stat or X-RTP-Stat (vise versa of that from OpenSIPS)
