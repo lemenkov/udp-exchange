@@ -8,6 +8,7 @@
 
 -module(udp_exchange_hep_packet).
 -include_lib("rabbit_common/include/rabbit.hrl").
+-include_lib("rabbit_common/include/rabbit_framing.hrl").
 
 -include_lib("hep/include/hep.hrl").
 -include_lib("nksip/include/nksip.hrl").
@@ -85,10 +86,7 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 			{ok,
 				{
 					CallId,
-					[
-						{content_type, <<"text/json">>},
-						{content_encoding, <<"utf8">>}
-					],
+					#'P_basic'{content_type = <<"text/json">>, content_encoding = <<"utf8">>},
 					iolist_to_binary(mochijson2:encode(Json))
 				}
 			};
