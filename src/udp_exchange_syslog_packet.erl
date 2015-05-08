@@ -57,13 +57,13 @@ rfc3164_parse(<<$<, Rest/binary>>) ->
 rfc3164_parse(_Data) ->
     error.
 
-parse(_IpAddr, _Port, Packet, Config) ->
+parse(_IpAddr, _Port, Packet, _Config) ->
     case rfc3164_parse(Packet) of
         {ok, Facility, Severity, Rest} ->
             {ok, {list_to_binary(io_lib:format("~p.~p", [Facility, Severity])),
                   [{headers, [{<<"facility">>, signedint, Facility},
                               {<<"severity">>, signedint, Severity}]}],
-                  Rest}, Config};
+                  Rest}};
         _ ->
             {error, {rfc3164_parsing_error, udp_exchange:truncate_bin(255, Packet)}}
     end.

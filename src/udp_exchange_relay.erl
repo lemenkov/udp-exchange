@@ -59,11 +59,11 @@ handle_info({udp, _Socket, SourceIp, SourcePort, Packet},
             State = #state{params = Params}) ->
     case udp_delivery(SourceIp, SourcePort, Packet, Params) of
         ignore ->
-            {noreply, State};
-        {ok, Delivery, NewParams} ->
-            ok = udp_exchange:deliver(Params#params.exchange_def, Delivery), 
-            {noreply, State#state{params = NewParams}}
-    end;
+            ok;
+        {ok, Delivery} ->
+            ok = udp_exchange:deliver(Params#params.exchange_def, Delivery)
+    end,
+    {noreply, State};
 
 handle_info(Msg, State) ->
     {stop, {unhandled_info, Msg}, State}.
@@ -105,11 +105,11 @@ analyze_delivery(Delivery =
 udp_delivery(IpAddr = {A, B, C, D},
              Port,
              Packet,
-             Params = #params{exchange_def = #exchange{name = XName},
+             #params{exchange_def = #exchange{name = XName},
                      packet_module = PacketModule,
                      packet_config = PacketConfig}) ->
     case PacketModule:parse(IpAddr, Port, Packet, PacketConfig) of
-        {ok, {RoutingKeySuffix, Properties, Body}, NewPacketConfig} ->
+        {ok, {RoutingKeySuffix, Properties, Body}} ->
             IpStr = list_to_binary(io_lib:format("~p.~p.~p.~p", [A, B, C, D])),
             RoutingKey = udp_exchange:truncate_bin(
                            255, list_to_binary(["ipv4",
@@ -119,7 +119,7 @@ udp_delivery(IpAddr = {A, B, C, D},
             {ok, rabbit_basic:delivery(false, %% mandatory?
                                        false, %% should confirm message?
                                        rabbit_basic:message(XName, RoutingKey, Properties, Body),
-                                       undefined), Params#params{packet_config = NewPacketConfig}};
+                                       undefined)};
         ignore ->
             ignore;
         {error, Error} ->

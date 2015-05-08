@@ -14,16 +14,15 @@
 
 -export([configure/1, parse/4, format/6]).
 
--record(hep_config, {counter = 0, prefix}).
+-record(hep_params, {prefix}).
 
 configure(#exchange{}) ->
 	{A,B,C} = os:timestamp(),
 	random:seed(A,B,C),
 	Prefix = << << (random:uniform(26) + 96):8 >> || _ <- lists:seq(0,15) >>,
-	#hep_config{prefix = Prefix}.
+	#hep_params{prefix = Prefix}.
 
-parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = Prefix}) ->
-
+parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 	case hep_multi_decoder:decode(Packet) of
 		{ok, Hep} ->
 			{CallId, JsonSip} = case nksip_parse_sipmsg:parse(Hep#hep.payload) of
@@ -67,7 +66,6 @@ parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = P
 			end,
 
 			JsonDate = [
-				{id, iolist_to_binary([Prefix, io_lib:format("-~16..0lb", [Counter])])},
 				{date, MkDate()},
 				{micro_ts, fun({Mega, Secs, Micro}) -> Mega*1000*1000*1000*1000 + Secs * 1000 * 1000 + Micro end (Hep#hep.timestamp)}
 			],
@@ -92,8 +90,7 @@ parse(_IpAddr, _Port, Packet, Config = #hep_config{counter = Counter, prefix = P
 						{content_encoding, <<"utf8">>}
 					],
 					iolist_to_binary(mochijson2:encode(Json))
-				},
-				Config#hep_config{counter = Counter + 1}
+				}
 			};
 		{error, _HepError, _Rest} ->
 			{error, {hep_parsing_error, udp_exchange:truncate_bin(255, Packet)}}
