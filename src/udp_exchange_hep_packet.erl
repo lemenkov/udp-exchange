@@ -16,15 +16,15 @@
 
 -export([configure/1, parse/4, format/6]).
 
--record(hep_params, {prefix}).
+-record(hep_params, {prefix, node}).
 
 configure(#exchange{}) ->
 	{A,B,C} = os:timestamp(),
 	random:seed(A,B,C),
 	Prefix = << << (random:uniform(26) + 96):8 >> || _ <- lists:seq(0,15) >>,
-	#hep_params{prefix = Prefix}.
+	#hep_params{prefix = Prefix, node = atom_to_binary(node(), utf8)}.
 
-parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
+parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix, node = Node}) ->
 	case hep_multi_decoder:decode(Packet) of
 		{ok, Hep} ->
 			{CallId, JsonSip} = case nksip_parse_sipmsg:parse(Hep#hep.payload) of
@@ -79,7 +79,7 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix}) ->
 				{destination_port, Hep#hep.dst_port},
 				{proto, Hep#hep.protocol}, % https://github.com/OpenSIPS/opensips/blob/7903f2c/ip_addr.h#L52
 				{family, Hep#hep.protocol_family}, % AF_INET (2),AF_INET6 (10)
-				{node, node()},
+				{node, Node},
 				{msg, Hep#hep.payload}
 			],
 
