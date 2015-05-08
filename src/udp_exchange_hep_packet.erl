@@ -62,17 +62,14 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix, node = Node}) ->
 			end,
 
 
-			MkDate = fun() ->
-				{{YYYY,MM,DD},{Hour,Min,Sec}} = calendar:now_to_local_time(Hep#hep.timestamp),
-				iolist_to_binary(io_lib:format("~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w", [YYYY, MM, DD, Hour,Min,Sec]))
-			end,
+			{{YYYY,MM,DD},{Hour,Min,Sec}} = calendar:now_to_local_time(Hep#hep.timestamp),
+			{Mega, Secs, Micro} = Hep#hep.timestamp,
+			Date = 	iolist_to_binary(io_lib:format("~4.4.0w-~2.2.0w-~2.2.0w ~2.2.0w:~2.2.0w:~2.2.0w", [YYYY, MM, DD, Hour,Min,Sec])),
+			MicroTs = Mega*1000*1000*1000*1000 + Secs * 1000 * 1000 + Micro,
 
 			JsonDate = [
-				{date, MkDate()},
-				{micro_ts, fun({Mega, Secs, Micro}) -> Mega*1000*1000*1000*1000 + Secs * 1000 * 1000 + Micro end (Hep#hep.timestamp)}
-			],
-
-			JsonRawData = [
+				{date, Date},
+				{micro_ts, MicroTs},
 				{source_ip, << <<S>> || S <- inet_parse:ntoa(Hep#hep.src_ip) >>},
 				{source_port, Hep#hep.src_port},
 				{destination_ip, << <<S>> || S <- inet_parse:ntoa(Hep#hep.dst_ip) >>},
@@ -83,12 +80,11 @@ parse(_IpAddr, _Port, Packet, #hep_params{prefix = Prefix, node = Node}) ->
 				{msg, Hep#hep.payload}
 			],
 
-			Json = lists:append(JsonDate, JsonSip, JsonRawData),
 			{ok,
 				{
 					CallId,
 					#'P_basic'{content_type = <<"text/json">>, content_encoding = <<"utf8">>},
-					iolist_to_binary(mochijson2:encode(Json))
+					iolist_to_binary(mochijson2:encode(lists:append([JsonDate, JsonSip])))
 				}
 			};
 		{error, _HepError, _Rest} ->
