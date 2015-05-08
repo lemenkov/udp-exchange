@@ -7,6 +7,7 @@
 %%
 
 -module(udp_exchange_hep_packet).
+
 -include_lib("rabbit_common/include/rabbit.hrl").
 -include_lib("rabbit_common/include/rabbit_framing.hrl").
 
