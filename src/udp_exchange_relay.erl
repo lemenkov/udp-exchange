@@ -102,7 +102,7 @@ analyze_delivery(Delivery =
                         Delivery,
                         PacketConfig).
 
-udp_delivery(IpAddr = {A, B, C, D},
+udp_delivery(IpAddr,
              Port,
              Packet,
              #params{exchange_def = #exchange{name = XName},
@@ -110,7 +110,7 @@ udp_delivery(IpAddr = {A, B, C, D},
                      packet_config = PacketConfig}) ->
     case PacketModule:parse(IpAddr, Port, Packet, PacketConfig) of
         {ok, {RoutingKeySuffix, Properties, Body}} ->
-            IpStr = list_to_binary(io_lib:format("~p.~p.~p.~p", [A, B, C, D])),
+            IpStr = list_to_binary(inet_parse:ntoa(IpAddr)),
             RoutingKey = udp_exchange:truncate_bin(
                            255, list_to_binary(["ipv4",
                                                 ".", IpStr,
