@@ -35,24 +35,7 @@ handle_call(Msg, _From, State) ->
 handle_cast(Msg, State) ->
     {stop, {unhandled_cast, Msg}, State}.
 
-handle_info(Delivery = #delivery{}, State = #state{params = Params,
-                                                   socket = Socket}) ->
-    case catch analyze_delivery(Delivery, Params) of
-        {TargetIp, TargetPort, Packet} ->
-            ok = gen_udp:send(Socket, TargetIp, TargetPort, Packet);
-        ignore ->
-            ok;
-        {'EXIT', Reason} ->
-            %% Discard messages we can't shoehorn into UDP.
-            RKs = (Delivery#delivery.message)#basic_message.routing_keys,
-            #params{exchange_def = #exchange{name = XName},
-                    packet_module = PacketModule} = Params,
-            error_logger:warning_report({?MODULE, PacketModule, format,
-                                         {Reason,
-                                          [{exchange, XName},
-                                           {routing_keys, RKs}]}}),
-            ok
-    end,
+handle_info(#delivery{}, State) ->
     {noreply, State};
 
 handle_info({udp, _Socket, SourceIp, SourcePort, Packet},
@@ -76,31 +59,6 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%----------------------------------------------------------------------------
-
-analyze_delivery(Delivery =
-                     #delivery{message =
-                                   #basic_message{routing_keys = [RoutingKey],
-                                                  content =
-                                                      #content{payload_fragments_rev =
-                                                                   PayloadRev}}},
-                 #params{packet_module = PacketModule,
-                         packet_config = PacketConfig}) ->
-    <<"ipv4.", Rest/binary>> = RoutingKey,
-    %% re:split(X,Y) can be replaced with binary:split(X,Y,[global]) once we
-    %% drop support for Erlangs older than R14.
-    [AStr, BStr, CStr, DStr, PortStr | RoutingKeySuffixes] = re:split(Rest, "\\."),
-    A = list_to_integer(binary_to_list(AStr)),
-    B = list_to_integer(binary_to_list(BStr)),
-    C = list_to_integer(binary_to_list(CStr)),
-    D = list_to_integer(binary_to_list(DStr)),
-    IpAddr = {A, B, C, D},
-    Port = list_to_integer(binary_to_list(PortStr)),
-    PacketModule:format(IpAddr,
-                        Port,
-                        RoutingKeySuffixes,
-                        list_to_binary(lists:reverse(PayloadRev)),
-                        Delivery,
-                        PacketConfig).
 
 udp_delivery(IpAddr,
              Port,
