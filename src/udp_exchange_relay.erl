@@ -40,11 +40,14 @@ handle_info(#delivery{}, State) ->
 
 handle_info({udp, _Socket, SourceIp, SourcePort, Packet},
             State = #state{params = Params}) ->
-    case udp_delivery(SourceIp, SourcePort, Packet, Params) of
-        ignore ->
-            ok;
-        {ok, Delivery} ->
-            ok = udp_exchange:deliver(Params#params.exchange_def, Delivery)
+    {message_queue_len, MessageQueueLen} = process_info(self(), message_queue_len),
+    (MessageQueueLen < 255) andalso begin
+        case udp_delivery(SourceIp, SourcePort, Packet, Params) of
+            ignore ->
+                ok;
+            {ok, Delivery} ->
+                ok = udp_exchange:deliver(Params#params.exchange_def, Delivery)
+        end
     end,
     {noreply, State};
 
